@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smriti: The Revision Graveyard</title>
+<style>
+:root{--fog:#a5b4fc;--ghost:#e0e7ff;--pumpkin:#f97316;--moss:#22c55e}
+body{margin:0;font-family:Georgia,serif;background:radial-gradient(ellipse at top,#1e1b4b,#030712 70%);color:var(--ghost);font-size:18px;min-height:100vh;overflow-x:hidden}
+header{text-align:center;padding:20px 12px}h1{margin:0;font-size:30px;color:var(--pumpkin);text-shadow:0 0 12px #f9731688}
+header p{margin:6px 0 0;color:var(--fog);font-style:italic}
+main{max-width:760px;margin:auto;padding:0 14px 40px}
+.bar{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:8px 0 16px}.bar span{background:#111827cc;border:1px solid #312e81;border-radius:20px;padding:6px 14px}
+.add{display:flex;gap:8px}.add input{flex:1;font-size:18px;padding:10px;border-radius:10px;border:1px solid #4338ca;background:#0b1020;color:var(--ghost)}
+button{font-size:16px;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+.add button{background:var(--pumpkin);color:#1c0a00}
+h2{color:var(--fog);font-size:20px;margin:22px 0 8px}
+.grave{position:relative;display:inline-block;width:200px;margin:10px;vertical-align:top;padding:18px 12px 12px;background:linear-gradient(#6b7280,#374151);border-radius:90px 90px 8px 8px;text-align:center;color:#111827;box-shadow:0 8px 0 #1f2937}
+.grave b{display:block;font-size:16px;margin-bottom:4px}.grave small{display:block;font-size:12px;margin-bottom:6px}
+.grave.ghostly{background:linear-gradient(#e0e7ffdd,#a5b4fc66);color:#1e1b4b;animation:float 3s ease-in-out infinite;box-shadow:0 0 22px #a5b4fc}
+@keyframes float{50%{transform:translateY(-8px)}}
+.grave button{padding:6px 9px;margin:2px;background:#111827;color:var(--ghost);font-size:14px}
+.alive{background:#052e16;border:1px solid var(--moss);border-radius:10px;padding:8px 12px;margin:6px 0;color:#bbf7d0}
+canvas{width:100%;background:#0b1020;border-radius:10px;border:1px solid #312e81}
+footer{text-align:center;color:#64748b;font-size:13px;margin-top:20px}
+</style></head><body>
+<header><h1>Smriti: The Revision Graveyard</h1><p>Every topic you forget rises as a ghost. Revise it to lay it to rest.</p></header>
+<main>
+<div class="bar"><span>Souls saved: <b id="pts">0</b></span><span>Night streak: <b id="streak">0</b></span><span>Ghosts tonight: <b id="due">0</b></span></div>
+<div class="add"><input id="topic" placeholder="Bury a topic, e.g. Ramsar wetlands"><button id="add">Bury it</button></div>
+<h2>Haunting you tonight</h2><div id="ghosts"></div>
+<h2>Resting peacefully</h2><div id="alive"></div>
+<h2>Fading memory forecast (30 nights)</h2><canvas id="chart" width="700" height="220"></canvas>
+<footer>SM-2 spaced repetition and the forgetting curve R = e^(-t/S). Data stays in your browser.</footer>
+</main>
+<script src="sm2.js"></script>
+<script>
+const K='smriti.graveyard.v1';let S=JSON.parse(localStorage.getItem(K)||'{"items":[],"points":0,"streak":0,"last":null}');
+const save=()=>localStorage.setItem(K,JSON.stringify(S));const today=()=>new Date().toISOString().slice(0,10);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const labels=['blank','dim','shaky','got it','solid','perfect'];
+function render(){const t=today();const due=S.items.filter(i=>i.due<=t),rest=S.items.filter(i=>i.due>t);
+pts.textContent=S.points;streak.textContent=S.streak;document.getElementById('due').textContent=due.length;
+ghosts.innerHTML=due.length?'':'<p style="color:#94a3b8">The graveyard is quiet tonight.</p>';
+due.forEach(i=>{const g=document.createElement('div');g.className='grave ghostly';g.innerHTML='<b>'+esc(i.name)+'</b><small>gap '+i.interval+'d, ease '+i.ef.toFixed(2)+'</small>';
+labels.forEach((l,q)=>{const b=document.createElement('button');b.textContent=q+' '+l;b.title='Recall: '+l;b.onclick=()=>{Object.assign(i,SM2.review(i,q,t));S.points+=10+q*2;
+if(S.last!==t){S.streak=(S.last===SM2.addDays(t,-1))?S.streak+1:1;S.last=t;}save();render();};g.appendChild(b);});ghosts.appendChild(g);});
+alive.innerHTML=rest.map(i=>'<div class="alive">'+esc(i.name)+' rests until '+i.due+'</div>').join('')||'<p style="color:#94a3b8">No one rests yet.</p>';draw();}
+function draw(){const c=chart,x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);const p=SM2.forecast(S.items,today(),30);
+x.strokeStyle='#312e81';x.beginPath();x.moveTo(34,10);x.lineTo(34,200);x.lineTo(690,200);x.stroke();x.fillStyle='#a5b4fc';x.font='12px Georgia';x.fillText('100%',0,14);x.fillText('0%',8,200);x.fillText('night 30',640,214);
+if(!p.length)return;x.strokeStyle='#f97316';x.lineWidth=3;x.shadowColor='#f97316';x.shadowBlur=8;x.beginPath();p.forEach((v,k)=>{const X=34+k*(656/30),Y=200-v*190;k?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke();x.shadowBlur=0;}
+add.onclick=()=>{const v=topic.value.trim();if(!v)return;S.items.push(SM2.newItem(v,today()));S.points+=5;topic.value='';save();render();};
+topic.onkeydown=e=>{if(e.key==='Enter')add.onclick();};render();
+</script></body></html>
