@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "name": "Run scheduler tests on save",
+  "description": "When sm2.js or test.js is saved, run node test.js and fix any failing check before continuing.",
+  "version": "1",
+  "when": { "type": "fileEdited", "patterns": ["sm2.js", "test.js"] },
+  "then": { "type": "askAgent", "prompt": "Run `node test.js`. If any check fails, fix sm2.js so the requirements in .kiro/specs/revision-graveyard/requirements.md hold, then run it again." }
+}
